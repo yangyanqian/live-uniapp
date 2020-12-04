@@ -1,0 +1,230 @@
+<template>
+	<view class="live-wrap position-relative">
+		<!-- http://ivi.bupt.edu.cn/hls/cctv1hd.m3u8 -->
+		<video class="flex-1" src="" autoplay :controls="false">
+		</video>
+		<!-- 头部 -->
+		<view class="top" :style="{'top': statusBarHeight+'px'}">
+			<!-- 个人信息&观看信息 -->
+			<view class="header flex">
+				<view class="user-box flex align-center">
+					<view class="flex flex-1">
+						<view class="img-border mr-1">
+							<image src="/static/default.jpg" mode="aspectFill" class="user-img"></image>
+						</view>
+						<view class="flex flex-column">
+							<text class="font text-white">美美</text>
+							<text class="font-sm text-white">0</text>
+						</view>
+					</view>
+					<view class="add-btn flex justify-center align-center">
+						<image src="/static/icon/add.png" style="width: 32rpx;height: 32rpx;"></image>
+					</view>
+				</view>
+				<view class="other-user flex-1 ml-2 flex align-center">
+					<scroll-view scroll-x :show-scrollbar="false" class="other-user-list flex-1 flex">
+						<view class="img-border mr-1" v-for="i in 5" :key="i">
+							<image src="/static/default.jpg" mode="aspectFill" class="user-img"></image>
+						</view>
+					</scroll-view>
+					<text class="font text-white px-2">0</text>
+				</view>
+			</view>
+			<!-- 金币 -->
+			<view>
+				<view class="sign flex mb-3">
+					<text class="text-warning mr-2">金币</text>
+					<text class="text-white">0</text>
+				</view>
+			</view>
+			<!-- 礼物列表 -->
+			<gift-list ref="giftList"></gift-list>
+		</view>
+		<!-- 弹幕列表 -->
+		<scroll-view class="chat-list" scroll-y :show-scrollbar="false">
+			<view class="chat-item my-1 flex" v-for="i in 10" :key="i">
+				<text class="font" style="color: #d72f40;">帅哥：</text>
+				<text class="font text-white">早啊</text>
+			</view>
+		</scroll-view>
+		<!-- 底部部分 -->
+		<view class="footer flex align-center justify-between">
+			<view class="px-2">
+				<view class="btn say align-center" @click="openPop('inputPop')">
+					<text class="text-white font">说点什么...</text>
+				</view>
+			</view>
+			<view class="flex align-center">
+				<view class="btn mr-2">
+					<text class="iconfont text-white font">金币<!-- &#xe607; --></text>
+				</view>
+				<view class="btn mr-2 bg-warning">
+					<text class="iconfont text-white font">礼物<!-- &#xe607; --></text>
+				</view>
+				<view class="btn mr-2">
+					<text class="iconfont text-white font">分享<!-- &#xe607; --></text>
+				</view>
+				<view class="btn mr-2">
+					<text class="iconfont text-white font">关闭<!-- &#xe607; --></text>
+				</view>
+			</view>
+		</view>
+
+		<!-- 输入框弹出层 -->
+		<uni-popup ref="inputPop" type="bottom">
+			<view class="bg-white px-2 py-2 flex align-center" style="height: 120rpx;">
+				<input type="text" v-model="sayText"  placeholder="说点什么..." 
+				class="flex-1 border rounded text-secondary px-2 font" style="height: 80rpx;"/>
+				<view class="bg-main ml-2 px-2 rounded flex align-center" style="height: 60rpx;"
+				 @click="sendSayText">
+					<text class="text-white font">发送</text>
+				</view>
+			</view>
+		</uni-popup>
+	</view>
+</template>
+
+<script>
+	import giftList from '@/components/live/gift-list.vue';
+	import liveFooter from '@/components/live/footer.vue';
+	import uniPopup from '@/uni-ui/uni-popup/uni-popup.vue';
+	export default {
+		components: {
+			giftList,
+			liveFooter,
+			uniPopup
+		},
+		data() {
+			return {
+				statusBarHeight: 0,
+				sayText: ""
+			}
+		},
+		onLoad() {
+			let res = uni.getSystemInfoSync();
+			this.statusBarHeight = res.statusBarHeight;
+		},
+		methods: {
+			// 发送礼物
+			sendGift() {
+				let gift = {
+					username: "发送人",
+					avatar: "",
+					gift_name: "蛋糕",
+					gift_image: "/static/gift/3.png",
+					gift_num: 2
+				}
+				this.$refs.giftList.send(gift);
+			},
+			//打开弹出层
+			openPop(sign){
+				this.$refs.inputPop.open();
+			},
+			//发送弹幕
+			sendSayText(){
+				this.$refs.inputPop.close();
+			}
+		}
+	}
+</script>
+
+<style>
+	.live-wrap {
+		flex: 1;
+	}
+
+	.img-border {
+		padding: 5rpx;
+		background-color: #fff;
+		border-radius: 50%;
+	}
+
+	.top {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		padding: 0 30rpx;
+	}
+
+	.header {
+		height: 80rpx;
+	}
+
+	.user-box {
+		width: 325rpx;
+		border-radius: 100rpx;
+		background-color: rgba(0, 0, 0, 0.2);
+	}
+
+	.user-img {
+		width: 70rpx;
+		height: 70rpx;
+		border-radius: 50%;
+	}
+
+	.add-btn {
+		width: 80rpx;
+		height: 80rpx;
+		border-radius: 50%;
+		background-color: #DC3546;
+	}
+
+	.other-user {
+		border-radius: 100rpx;
+		background-color: rgba(0, 0, 0, 0.2);
+	}
+
+	/* 金币信息 */
+	.sign {
+		width: 210rpx;
+		height: 60rpx;
+		font-size: 20rpx;
+		line-height: 60rpx;
+		margin-top: 20rpx;
+		padding: 5rpx 20rpx;
+		border-radius: 50rpx;
+		background-color: rgba(0, 0, 0, 0.2);
+		/* position: absolute; */
+	}
+
+	/* 弹幕聊天列表 */
+	.chat-list {
+		position: fixed;
+		bottom: 120rpx;
+		height: 380rpx;
+		width: 520rpx;
+		padding: 10rpx;
+	}
+
+	.chat-item {
+		padding: 10rpx;
+		border-radius: 6rpx;
+		background-color: rgba(255, 255, 255, 0.3);
+
+	}
+
+	/* 底部操作条 */
+	.footer {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		height: 120rpx;
+		background-color: rgba(0, 0, 0, 0.2);
+	}
+
+	.btn {
+		width: 80rpx;
+		height: 80rpx;
+		border-radius: 100rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background-color: rgba(255, 255, 255, 0.3);
+	}
+
+	.say {
+		width: 200rpx;
+	}
+</style>
