@@ -33,17 +33,6 @@
 			}
 		},
 		created(){
-			/* this.tim = setInterval(() => {
-				 this.gifts.push({
-					 username: "发送人",
-					 avatar: "",
-					 gift_name: "蛋糕",
-					 gift_image: "/static/gift/3.png",
-					 gift_num: 2
-				 })
-				 this.toBottom();
-				 this.autoHide();
-			}, 3000) */
 		},
 		watch: {
 			gifts(newValue, oldValue) {

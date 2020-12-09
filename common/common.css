@@ -8,6 +8,9 @@
 .text-main-disabled{
 	color: #BA7ACE;
 }
+.text-yellow {
+	color: #FEC107;
+}
 /* 背景 */
 .bg-main{
 	background-color: #8745FF;

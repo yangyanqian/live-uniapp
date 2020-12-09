@@ -41,12 +41,7 @@
 			<gift-list ref="giftList"></gift-list>
 		</view>
 		<!-- 弹幕列表 -->
-		<scroll-view class="chat-list" scroll-y :show-scrollbar="false">
-			<view class="chat-item my-1 flex" v-for="i in 10" :key="i">
-				<text class="font" style="color: #d72f40;">帅哥：</text>
-				<text class="font text-white">早啊</text>
-			</view>
-		</scroll-view>
+		<danmu-list ref="danmuList"></danmu-list>
 		<!-- 底部部分 -->
 		<view class="footer flex align-center justify-between">
 			<view class="px-2">
@@ -55,29 +50,69 @@
 				</view>
 			</view>
 			<view class="flex align-center">
-				<view class="btn mr-2">
+				<view class="btn mr-2" @click="openCoin">
 					<text class="iconfont text-white font">金币<!-- &#xe607; --></text>
 				</view>
-				<view class="btn mr-2 bg-warning">
+				<view class="btn mr-2 bg-warning" @click="openPop('giftPop')">
 					<text class="iconfont text-white font">礼物<!-- &#xe607; --></text>
 				</view>
 				<view class="btn mr-2">
 					<text class="iconfont text-white font">分享<!-- &#xe607; --></text>
 				</view>
-				<view class="btn mr-2">
+				<view class="btn mr-2" @click="goback">
 					<text class="iconfont text-white font">关闭<!-- &#xe607; --></text>
 				</view>
 			</view>
 		</view>
 
-		<!-- 输入框弹出层 -->
+		<!-- 输入框-弹出层 -->
 		<uni-popup ref="inputPop" type="bottom">
 			<view class="bg-white px-2 py-2 flex align-center" style="height: 120rpx;">
-				<input type="text" v-model="sayText"  placeholder="说点什么..." 
+				<input type="text" ref="input" v-model="sayText"  placeholder="说点什么..." 
 				class="flex-1 border rounded text-secondary px-2 font" style="height: 80rpx;"/>
-				<view class="bg-main ml-2 px-2 rounded flex align-center" style="height: 60rpx;"
+				<view class="ml-2 px-2 rounded flex align-center" style="height: 60rpx;" 
+				:class="sayText.trim() == '' ? 'bg-main-disabled' : 'bg-main'"
 				 @click="sendSayText">
 					<text class="text-white font">发送</text>
+				</view>
+			</view>
+		</uni-popup>
+		
+		<!-- 礼物-弹出层 -->
+		<uni-popup ref="giftPop" type="bottom">
+			<view class="gift-pop bg-white" style="height: 590rpx;">
+				<view class="px-2 flex align-center border-bottom" style="height: 90rpx;">
+					<text class="flex-1 text-main">礼物</text>
+					<text class="text-secondary" @click="closePop('giftPop')"> X </text>
+				</view>
+				<!-- 礼物列表 -->
+				<swiper :indicator-dots="true" :duration="500"
+				style="height: 390rpx;">
+					<swiper-item>
+						<view class="px-1 flex flex-wrap " style="height: 390rpx;">
+							<view class="flex flex-column align-center py-2 border border-white" style="width: 183rpx;"
+							v-for="(item, i) in giftData" :key="i" :class="giftActive == item.id ? 'border-main' : ''"
+							@click="giftActive = item.id">
+								<image :src="item.image" mode="aspectFit" 
+								style="width: 100rpx;height: 100rpx;"></image>
+								<view class="flex align-center" style="height: 50rpx;">
+									<text class="font text-yellow mr-1">{{item.name}}</text>
+									<text class="font text-dark">{{item.coin}}</text>
+								</view>
+							</view>
+						</view>
+					</swiper-item>
+					<swiper-item>
+						<view class="swiper-item"></view>
+					</swiper-item>
+				</swiper>
+				<view class="px-2 flex align-center justify-end" style="height: 110rpx;">
+					<view class="px-3 py-2 rounded mr-2" style="background-color: #FEC107;">
+						<text class="font text-dark" @click="openCoin">充值</text>
+					</view>
+					<view class="bg-main px-3 py-2 rounded" @click="sendGift">
+						<text class="font text-white">发送</text>
+					</view>
 				</view>
 			</view>
 		</uni-popup>
@@ -85,44 +120,88 @@
 </template>
 
 <script>
+	/* {
+		id: 1,
+		name: "",
+		content:""
+	} */
 	import giftList from '@/components/live/gift-list.vue';
 	import liveFooter from '@/components/live/footer.vue';
-	import uniPopup from '@/uni-ui/uni-popup/uni-popup.vue';
+	import danmuList from '@/components/live/danmu-list.vue';
+	import uniPopup from '@/components/uni-ui/uni-popup/popup.js';
+	
+	import giftData from "@/demo/gifts.js"
 	export default {
 		components: {
 			giftList,
+			danmuList,
 			liveFooter,
 			uniPopup
 		},
 		data() {
 			return {
 				statusBarHeight: 0,
-				sayText: ""
+				sayText: "",
+				giftData: [],
+				giftActive: 0, //选中的礼物id
 			}
 		},
 		onLoad() {
 			let res = uni.getSystemInfoSync();
 			this.statusBarHeight = res.statusBarHeight;
+			//赋值
+			this.giftData = giftData;
 		},
 		methods: {
+			//返回上一页
+			goback(){
+				uni.navigateBack({
+					delta: 1
+				})
+			},
+			//打开充值页面-我的余额
+			openCoin(){
+				uni.navigateTo({
+					url:"../coin/coin"
+				})
+			},
 			// 发送礼物
 			sendGift() {
-				let gift = {
+				if(!this.giftActive) return uni.showToast({
+					title: "请选择要送的礼物",
+					icon: "none"
+				})
+				let choosed = this.giftData.find(item => item.id == this.giftActive);
+				if(!choosed) return
+				this.$refs.giftList.send({
 					username: "发送人",
 					avatar: "",
-					gift_name: "蛋糕",
-					gift_image: "/static/gift/3.png",
-					gift_num: 2
-				}
-				this.$refs.giftList.send(gift);
+					gift_name: choosed.name,
+					gift_image: choosed.image,
+					gift_num: 1
+				});
 			},
 			//打开弹出层
 			openPop(sign){
-				this.$refs.inputPop.open();
+				this.$refs[sign].open();
+			},
+			//关闭弹出层
+			closePop(sign){
+				this.$refs[sign].close();
+				if(sign == "giftPop") this.giftActive = 0;
 			},
 			//发送弹幕
 			sendSayText(){
-				this.$refs.inputPop.close();
+				if(this.sayText.trim() == "") return
+				let danmu = {
+					id: 0,
+					name: "user",
+					content: this.sayText
+				}
+				this.$refs.danmuList.send(danmu);
+				this.closePop("inputPop");
+				this.sayText = "";
+				// this.$refs.input.blur();
 			}
 		}
 	}
@@ -188,22 +267,6 @@
 		/* position: absolute; */
 	}
 
-	/* 弹幕聊天列表 */
-	.chat-list {
-		position: fixed;
-		bottom: 120rpx;
-		height: 380rpx;
-		width: 520rpx;
-		padding: 10rpx;
-	}
-
-	.chat-item {
-		padding: 10rpx;
-		border-radius: 6rpx;
-		background-color: rgba(255, 255, 255, 0.3);
-
-	}
-
 	/* 底部操作条 */
 	.footer {
 		position: fixed;
@@ -218,13 +281,17 @@
 		width: 80rpx;
 		height: 80rpx;
 		border-radius: 100rpx;
-		display: flex;
+		/* display: flex; */
 		align-items: center;
 		justify-content: center;
-		background-color: rgba(255, 255, 255, 0.3);
+		background-color: rgba(255, 255, 255, 0.2);
 	}
 
 	.say {
 		width: 200rpx;
+	}
+	
+	.gift-pop {
+		height: 800rpx;
 	}
 </style>

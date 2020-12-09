@@ -1,0 +1,279 @@
+<template>
+	<view class="live-wrap position-relative">
+		<!-- http://ivi.bupt.edu.cn/hls/cctv1hd.m3u8 -->
+		<live-pusher id='livePusher' ref="livePusher" class="livePusher flex-1"
+		:url="url" 
+		:mode="config.mode" 
+		:muted="config.muted"
+		:enable-camera="true" 
+		:auto-focus="true" 
+		:beauty="config.beauty" 
+		:whiteness="config.whiteness" 
+		aspect="9:16" 
+		:device-position="config.devicePosition"
+		@statechange="statechange" 
+		@netstatus="netstatus" 
+		@error="error" 
+		:style="'height:'+ windowHeight + 'px;'" 
+		style="width: 750rpx;"></live-pusher>
+		
+		<!-- 头部 -->
+		<view class="top" :style="{'top': statusBarHeight+'px'}">
+			<!-- 个人信息&观看信息 -->
+			<view class="header flex">
+				<view class="user-box flex align-center">
+					<view class="flex flex-1">
+						<view class="img-border mr-1">
+							<image src="/static/default.jpg" mode="aspectFill" class="user-img"></image>
+						</view>
+						<view class="flex flex-column">
+							<text class="font text-white">美美</text>
+							<text class="font-sm text-white">0</text>
+						</view>
+					</view>
+					<view class="add-btn flex justify-center align-center">
+						<image src="/static/icon/add.png" style="width: 32rpx;height: 32rpx;"></image>
+					</view>
+				</view>
+				<view class="other-user flex-1 ml-2 flex align-center">
+					<scroll-view scroll-x :show-scrollbar="false" class="other-user-list flex-1 flex">
+						<view class="img-border mr-1" v-for="i in 5" :key="i">
+							<image src="/static/default.jpg" mode="aspectFill" class="user-img"></image>
+						</view>
+					</scroll-view>
+					<text class="font text-white px-2">0</text>
+				</view>
+			</view>
+			<!-- 金币 -->
+			<view>
+				<view class="sign flex mb-3">
+					<text class="text-warning mr-2">金币</text>
+					<text class="text-white">0</text>
+				</view>
+			</view>
+			<!-- 礼物列表 -->
+			<gift-list ref="giftList"></gift-list>
+		</view>
+		<!-- 弹幕列表 -->
+		<danmu-list ref="danmuList"></danmu-list>
+		<!-- 底部部分 -->
+		<view class="footer flex align-center justify-between">
+			<!-- @click="switchCamera" -->
+			<!-- <view class="footer-item flex flex-column align-center justify-center"
+			@click="switchCamera">
+				<text class="iconfont text-white">&#xe7cd;</text>
+				<text class="font text-white mt-1">翻转</text>
+			</view> -->
+			<view class="footer-item flex flex-column align-center justify-center"
+			v-for="(item, i) in operationBar"
+			@click="handelEvent(item)">
+				<text class="iconfont text-white">{{item.icon}}</text>
+				<text class="font text-white mt-1">{{item.label}}</text>
+			</view>
+		</view>
+		
+		<!-- 弹出层 -->
+		<uni-popup ref="livePop" type="bottom">
+			<view class="flex flex-column bg-white">
+				<view class="border-bottom flex align-center justify-center" style="height: 80rpx;">
+					<text class="font-md">{{popTitle}}</text>
+				</view>
+				<!-- 画质 -->
+				<template v-if="popType == 'mode'">
+					<view class="mode-item flex align-center justify-center"
+					v-for="(item, i) in modeList" :key="i" :class="{'bg-main': item.value == config.mode}"
+					@click="config.mode = item.value">
+						<text class="font" :class="{'text-white': item.value == config.mode}">{{item.label}}</text>
+					</view>
+				</template>
+				<!-- 美颜 -->
+				<view class="p-2 px-4" v-if="popType == 'beauty'">
+					<slider :value="config.beauty" show-value min="0" max="9" @change="beautyChange" />
+				</view>
+				<!-- 美白 -->
+				<view class="p-2 px-4" v-if="popType == 'whiteness'">
+					<slider :value="config.whiteness" show-value min="0" max="9" @change="whitenessChange" />
+				</view>
+				<!-- 更多 -->
+				<view class="px-2 py-4 flex" v-if="popType == 'more'">
+					<view class="flex flex-column justify-center px-4"
+					@click="changeLiveStatus">
+						<text class="iconfont">{{liveStatus ? '&#xe611;' : '&#xe638;'}}</text>
+						<text class="font">{{liveStatus ? '暂停' : '继续'}}</text>
+					</view>
+					<view class="flex flex-column justify-center px-4"
+					@click="stop">
+						<text class="iconfont">&#xe64d;</text>
+						<text class="font">退出</text>
+					</view>
+				</view>
+				<view class="border-block"></view>
+				<view class="mode-item border-bottom flex align-center justify-center"
+				@click="closePop('modePop')">
+					<text class="font">关闭</text>
+				</view>
+			</view>
+		</uni-popup>
+	</view>
+</template>
+
+<script>
+	import giftList from '@/components/live/gift-list.vue';
+	import liveFooter from '@/components/live/footer.vue';
+	import danmuList from '@/components/live/danmu-list.vue';
+	import uniPopup from '@/components/uni-ui/uni-popup/uni-popup.vue';
+	
+	import giftData from "@/demo/gifts.js"
+	import live from '@/common/mixins/live.js';
+	export default {
+		mixins: [ live ],
+		components: {
+			giftList,
+			danmuList,
+			liveFooter,
+			uniPopup
+		},
+		data() {
+			return {
+				liveStatus: true, //播放状态
+			}
+		},
+		onReady() {
+			this.operationBar.push({
+					label: "更多",
+					value: "more",
+					icon: "\ue84b",
+					event: "openPop"
+				},)
+			this.context = uni.createLivePusherContext("livePusher", this);
+			//开始推流
+			this.start();
+		},
+		methods: {
+			//开始推流
+			start(){
+				this.context.startPreview({
+					success: (e) => {
+						console.log(e);
+					}
+				})
+			},
+			//暂停 、播放
+			changeLiveStatus(){
+				console.log("change");
+				// this.liveStatus = !this.liveStatus;
+				if(this.liveStatus){
+					//暂停
+					this.context.pause({
+						success: (e) => {
+							console.log(e);
+							this.liveStatus = false;
+						}
+					})
+				}
+				else {
+					//恢复推流
+					this.context.resume({
+						success: (e) => {
+							console.log(e);
+							this.liveStatus = true;
+						}
+					})
+				}
+			},
+			// 退出
+			stop(){
+				this.context.stop({
+					success: (e) => {
+						console.log(e);	
+						this.goBack(2);
+					}
+				})
+			}
+		}
+	}
+</script>
+
+<style>
+	.live-wrap {
+		flex: 1;
+	}
+
+	.img-border {
+		padding: 5rpx;
+		background-color: #fff;
+		border-radius: 50%;
+	}
+
+	.top {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		padding: 0 30rpx;
+	}
+
+	.header {
+		height: 80rpx;
+	}
+
+	.user-box {
+		width: 325rpx;
+		border-radius: 100rpx;
+		background-color: rgba(0, 0, 0, 0.2);
+	}
+
+	.user-img {
+		width: 70rpx;
+		height: 70rpx;
+		border-radius: 50%;
+	}
+
+	.add-btn {
+		width: 80rpx;
+		height: 80rpx;
+		border-radius: 50%;
+		background-color: #DC3546;
+	}
+
+	.other-user {
+		border-radius: 100rpx;
+		background-color: rgba(0, 0, 0, 0.2);
+	}
+
+	/* 金币信息 */
+	.sign {
+		width: 210rpx;
+		height: 60rpx;
+		font-size: 20rpx;
+		line-height: 60rpx;
+		margin-top: 20rpx;
+		padding: 5rpx 20rpx;
+		border-radius: 50rpx;
+		background-color: rgba(0, 0, 0, 0.2);
+		/* position: absolute; */
+	}
+
+	/* 底部操作条 */
+	.footer {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		height: 120rpx;
+		background-color: rgba(0, 0, 0, 0.2);
+	}
+	
+	.footer-item {
+		width: 150rpx;
+		height: 120rpx;
+	}
+	
+	.mode-item {
+		height: 100rpx;
+	}
+	.border-block {
+		height: 16rpx;
+		background-color: #F5F5F3;
+	}
+</style>

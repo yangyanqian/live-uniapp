@@ -5,7 +5,9 @@
 			
 			//监听导航中间凸起按钮的点击事件
 			uni.onTabBarMidButtonTap(() => {
-				console.log("直播入口");
+				uni.navigateTo({
+					url:"../create-live/create-live"
+				})
 			})
 		},
 		onShow: function() {

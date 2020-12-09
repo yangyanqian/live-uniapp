@@ -38,6 +38,34 @@
 					"titleNView": false
 				}
 			}
+		}, {
+			"path": "pages/coin/coin",
+			"style": {
+				"navigationBarBackgroundColor": "#fff",
+				"navigationBarTitleText": "我的余额",
+				"navigationBarTextStyle": "black"
+			}
+		}, {
+			"path": "pages/create-live/create-live",
+			"style": {
+				"app-plus": {
+					"titleNView": false
+				}
+			}
+		}, {
+			"path": "pages/create-live/create-live",
+			"style": {
+				"app-plus": {
+					"titleNView": false
+				}
+			}
+		}, {
+			"path": "pages/live-room/live-room",
+			"style": {
+				"app-plus": {
+					"titleNView": false
+				}
+			}
 		}
 	],
 	"globalStyle": {
